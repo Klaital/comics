@@ -1,0 +1,9 @@
+version: '3'
+services:
+  comics:
+    build: .
+    ports:
+      - "8011:8080"
+    command: [ "/comics" ]
+    env_file:
+      - .env
