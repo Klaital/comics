@@ -9,12 +9,17 @@ import (
 )
 
 type Config struct {
-	DbHost     string `env:"DB_HOST"`
-	DbUser     string `env:"DB_USER"`
-	DbPassword string `env:"DB_PASSWORD"`
-	DbName     string `env:"DB_NAME"`
-	db *sqlx.DB // shared db connection pool
+	// Database
+	DbHost     string   `env:"DB_HOST"`
+	DbUser     string   `env:"DB_USER"`
+	DbPassword string   `env:"DB_PASSWORD"`
+	DbName     string   `env:"DB_NAME"`
+	db         *sqlx.DB // shared db connection pool
+
+	// Logging
 	LogContext *log.Entry
+	LogLevel   string `env:"LOG_LEVEL"`
+	LogPretty  bool   `env:"LOG_PRETTY"`
 }
 
 func (cfg *Config) ConnectDB() (*sqlx.DB, error) {
@@ -29,19 +34,32 @@ func (cfg *Config) ConnectDB() (*sqlx.DB, error) {
 }
 
 func Load() Config {
-	godotenv.Load(".env")
 	logger := log.StandardLogger()
 	logger.SetLevel(log.DebugLevel)
 	logger.SetFormatter(&log.JSONFormatter{
 		PrettyPrint: true,
 	})
-	var cfg Config
-	_, err := env.UnmarshalFromEnviron(&cfg)
+	err := godotenv.Load(".env")
 	if err != nil {
-		log.Fatal(err)
+		logger.WithError(err).Fatal("Failed to load env file")
+	}
+	var cfg Config
+	_, err = env.UnmarshalFromEnviron(&cfg)
+	if err != nil {
+		logger.Fatal(err)
+	}
+
+	// Configure the standard logger
+	logLevel, err := log.ParseLevel(cfg.LogLevel)
+	if err == nil {
+		logger.SetLevel(logLevel)
+	} else {
+		logger.SetLevel(log.ErrorLevel)
+		logger.WithError(err).Error("Failed to parse loglevel. Defaulting to Error level")
 	}
 	cfg.LogContext = log.NewEntry(logger)
 
+	// Connect to the DB and cache the connection pool
 	cfg.db, err = cfg.ConnectDB()
 	if err != nil {
 		cfg.LogContext.WithError(err).Fatal("Failed to connect to database")

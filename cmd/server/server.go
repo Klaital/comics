@@ -71,8 +71,9 @@ func launchServer(cfg *config.Config) {
 	}
 	serverCfg.cacheComicsData(comicSet)
 
-	http.HandleFunc("/", serverCfg.getActiveComicsHandler)
-	http.HandleFunc("/read/", serverCfg.readComicHandler)
+	http.HandleFunc("/api/comics", serverCfg.getActiveComicsHandler)
+	http.HandleFunc("/api/read/", serverCfg.readComicHandler)
+	http.Handle("/", http.FileServer(http.Dir("./web")))
 	log.Fatal(http.ListenAndServe("0.0.0.0:8080", nil))
 }
 
@@ -82,7 +83,7 @@ func launchServer(cfg *config.Config) {
 // TODO: also auto-refresh the active comics list so that the least-recently-read comics bubble up.
 func (cfg *handlerConfig) readComicHandler(w http.ResponseWriter, req *http.Request) {
 	// Queue the async DB update
-	idStr := strings.TrimPrefix(req.URL.Path, "/read/")
+	idStr := strings.TrimPrefix(req.URL.Path, "/api/read/")
 	if len(idStr) == 0 {
 		cfg.logger.Error("No comic ID from path param")
 		w.WriteHeader(http.StatusNotFound)
@@ -136,11 +137,11 @@ func (cfg *handlerConfig) getActiveComicsHandler(w http.ResponseWriter, req *htt
 	<body>
 		<h2>Comics For Today</h2>
 		<table id="comicslist">
-			{{range .Items}}<tr class="comic"><td>{{ .DaysAgoNow }}</td><td><a href="http://localhost:8080/read/{{ .ID }}">{{.Title}}</a></td></tr>{{end}}
+			{{range .Today}}<tr class="comic"><td>{{ .DaysAgoNow }}</td><td><a href="http://localhost:8080/api/read/{{ .ID }}">{{.Title}}</a></td></tr>{{end}}
 		</table>
 		<h2>The Rest</h2>
 		<table id="comicslist">
-			{{range .Items}}<tr class="comic"><td>{{ .DaysAgoNow }}</td><td><a href="http://localhost:8080/read/{{ .ID }}">{{.Title}}</a></td></tr>{{end}}
+			{{range .Items}}<tr class="comic"><td>{{ .DaysAgoNow }}</td><td><a href="http://localhost:8080/api/read/{{ .ID }}">{{.Title}}</a></td></tr>{{end}}
 		</table>
 	</body>
 </html>`
