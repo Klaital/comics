@@ -6,6 +6,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
 	log "github.com/sirupsen/logrus"
+	"os"
 )
 
 type Config struct {
@@ -39,12 +40,15 @@ func Load() Config {
 	logger.SetFormatter(&log.JSONFormatter{
 		PrettyPrint: true,
 	})
-	err := godotenv.Load(".env")
-	if err != nil {
-		logger.WithError(err).Fatal("Failed to load env file")
+	envFile := os.Getenv("ENV_FILE")
+	if len(envFile) > 0 {
+		err := godotenv.Load(envFile)
+		if err != nil {
+			logger.WithError(err).Fatal("Failed to load env file")
+		}
 	}
 	var cfg Config
-	_, err = env.UnmarshalFromEnviron(&cfg)
+	_, err := env.UnmarshalFromEnviron(&cfg)
 	if err != nil {
 		logger.Fatal(err)
 	}
