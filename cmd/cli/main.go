@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"flag"
+	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/klaital/comics/pkg/comics"
 	"github.com/klaital/comics/pkg/config"
@@ -43,7 +44,9 @@ func addNewComic(cfg *config.Config) {
 	fs.StringVar(&latestComicUrl, "rss", "", "Comic's RSS feed URL.")
 	fs.StringVar(&c.Title, "title", "", "Comic title")
 	fs.StringVar(&c.BaseURL, "base", "", "Base URL for the comic's website. Preferably the 'newest comic' page")
-	fs.Parse(os.Args[2:])
+	if err := fs.Parse(os.Args[2:]); err != nil {
+		logger.WithError(err).Fatal("failed to parse flagset")
+	}
 
 	if len(updateScheduleString) > 0 {
 		parseDateString(updateScheduleString, &c)
@@ -91,6 +94,23 @@ func parseDateString(s string, c *comics.Comic) {
 	c.UpdatesFriday = strings.Index(s, "F") > 0
 	c.UpdatesSaturday = strings.Index(s, "Sa") > 0
 }
+
+func listActiveComics(cfg *config.Config) {
+	db, err := cfg.ConnectDB()
+	if err != nil {
+		log.WithError(err).Fatal("Failed to connect to DB")
+	}
+
+	activeComics, err := comics.FetchActiveComics(db)
+	if err != nil {
+		log.WithError(err).Fatal("Failed to fetch comics list")
+	}
+
+	for _, c := range activeComics {
+		fmt.Printf("%s\n", c.ToString())
+	}
+
+}
 func main() {
 	cfg := config.Load()
 	//logger := cfg.LogContext.WithField("operation", "main")
@@ -98,5 +118,7 @@ func main() {
 	switch os.Args[1] {
 	case "add":
 		addNewComic(&cfg)
+	case "list":
+		listActiveComics(&cfg)
 	}
 }
