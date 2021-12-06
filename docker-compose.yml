@@ -6,4 +6,4 @@ services:
       - "8011:8080"
     command: [ "/comics" ]
     env_file:
-      - .env
+      - ./run/prod.env
