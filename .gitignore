@@ -16,6 +16,4 @@
 
 *.env
 
-comics
-
 web/main.wasm

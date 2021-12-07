@@ -51,7 +51,7 @@ func addNewComic(cfg *config.Config) {
 	if len(updateScheduleString) > 0 {
 		parseDateString(updateScheduleString, &c)
 		logger.WithFields(log.Fields{
-			"comic": c,
+			"comic":    c,
 			"schedule": updateScheduleString,
 		}).Debug("updated schedule")
 	}
@@ -70,7 +70,7 @@ func addNewComic(cfg *config.Config) {
 
 	if err := c.IsValid(); err != nil {
 		logger.WithFields(log.Fields{
-			"args": os.Args,
+			"args":  os.Args,
 			"comic": c,
 		}).WithError(err).Error("Failed to construct a valid comic to insert")
 		flag.PrintDefaults()
@@ -82,7 +82,9 @@ func addNewComic(cfg *config.Config) {
 		logger.WithError(err).Fatal("Failed to connect to db")
 	}
 
-	comics.InsertNewComic(&c, db)
+	if err = comics.InsertNewComic(&c, db); err != nil {
+		logger.WithError(err).Fatal("Failed to insert new comic")
+	}
 
 }
 func parseDateString(s string, c *comics.Comic) {

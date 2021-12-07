@@ -62,6 +62,7 @@ func Load() Config {
 		logger.WithError(err).Error("Failed to parse loglevel. Defaulting to Error level")
 	}
 	cfg.LogContext = log.NewEntry(logger)
+	log.SetReportCaller(logLevel == log.DebugLevel)
 
 	// Connect to the DB and cache the connection pool
 	cfg.db, err = cfg.ConnectDB()

@@ -1,0 +1,56 @@
+- webcomic_id: 1
+  user_id: 1
+  ordinal: 1
+  title: Test Comic 1
+  base_url: http://example.org/comic1
+  first_comic_url: http://example.org/comic1/1
+  latest_comic_url: http://example.org/comic1/
+  rss_url: http://example.org/comic1/rss
+  active: true
+  nsfw: false
+  last_read: RAW=NOW()
+  updates_monday: true
+  updates_tuesday: false
+  updates_wednesday: false
+  updates_thursday: false
+  updates_friday: false
+  updates_saturday: false
+  updates_sunday: false
+
+- webcomic_id: 2
+  user_id: 1
+  ordinal: 2
+  title: Test Comic 2
+  base_url: http://example.org/comic2
+  first_comic_url: http://example.org/comic2/1
+  latest_comic_url: http://example.org/comic2/
+  rss_url: http://example.org/comic2/rss
+  active: true
+  nsfw: false
+  last_read: RAW=NOW()
+  updates_monday: false
+  updates_tuesday: true
+  updates_wednesday: false
+  updates_thursday: false
+  updates_friday: false
+  updates_saturday: false
+  updates_sunday: false
+
+- webcomic_id: 3
+  user_id: 1
+  ordinal: 3
+  title: Test Comic 3
+  base_url: http://example.org/comic3
+  first_comic_url: http://example.org/comic3/1
+  latest_comic_url: http://example.org/comic3/
+  rss_url: http://example.org/comic3/rss
+  active: true
+  nsfw: false
+  last_read: RAW=NOW()
+  updates_monday: false
+  updates_tuesday: false
+  updates_wednesday: true
+  updates_thursday: false
+  updates_friday: false
+  updates_saturday: false
+  updates_sunday: false

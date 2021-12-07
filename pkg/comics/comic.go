@@ -10,6 +10,7 @@ import (
 
 type Comic struct {
 	ID               int            `db:"webcomic_id"`
+	UserID           int            `db:"user_id"`
 	Title            string         `db:"title"`
 	BaseURL          string         `db:"base_url"`
 	FirstComicUrl    sql.NullString `db:"first_comic_url"`
