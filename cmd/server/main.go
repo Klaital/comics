@@ -7,9 +7,6 @@ import (
 	"github.com/klaital/comics/pkg/config"
 )
 
-
-
-
 func main() {
 	cfg := config.Load()
 	logger := cfg.LogContext.WithField("operation", "main")
@@ -17,7 +14,7 @@ func main() {
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to connect to db")
 	}
-	comicData, err := comics.FetchActiveComics(db)
+	comicData, err := comics.FetchActiveComics(db, 1)
 
 	selector := comics.GetTodaySelector()
 	today, theRest := comics.SelectSubset(comicData, selector)
