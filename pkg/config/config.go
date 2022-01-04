@@ -21,6 +21,12 @@ type Config struct {
 	LogContext *log.Entry
 	LogLevel   string `env:"LOG_LEVEL"`
 	LogPretty  bool   `env:"LOG_PRETTY"`
+
+	// Webserver
+	BasePath string `env:"BASE_PATH" envDefault:"api"`
+	Realm    string `env:"REALM" envDefault:"undefined"`
+	Hostname string `env:"HOSTNAME" envDefault:"localhost"`
+	Port     int    `env:"PORT" envDefault:"8080"`
 }
 
 func (cfg *Config) ConnectDB() (*sqlx.DB, error) {
