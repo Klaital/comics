@@ -27,12 +27,12 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		cfg.LogContext.WithError(err).Fatal("Failed to construct migration driver")
 	}
-	migrator, err := migrate.NewWithDatabaseInstance("file:///home/kit/devel/comics/db/migrations", cfg.DbName, driver)
+	migrator, err := migrate.NewWithDatabaseInstance("file://../../db/migrations", cfg.DbName, driver)
 	if err != nil {
 		cfg.LogContext.WithError(err).Fatal("Failed to construct migrator instance")
 	}
 	err = migrator.Up()
-	if err != nil {
+	if err != nil && err != migrate.ErrNoChange {
 		cfg.LogContext.WithError(err).Fatal("Failed to run migrations")
 	}
 

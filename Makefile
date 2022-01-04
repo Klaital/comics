@@ -1,6 +1,6 @@
 
+gitver: $(eval GITVER=$(shell git rev-parse HEAD))
 gitver:
-	GITVER=$(git rev-parse HEAD)
 	@echo $(GITVER)
 
 build:
@@ -8,7 +8,7 @@ build:
 	CGO_ENABLED=0 GOOS=js GOARCH=wasm go build -o ./web/main.wasm ./cmd/weblib
 
 test:
-	go test ./...
+	ENV_FILE=../../run/autotest.env go test ./pkg/...
 
 container: build test gitver
 	docker build -t klaital/comics-web:$(GITVER) .

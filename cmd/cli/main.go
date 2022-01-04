@@ -15,7 +15,7 @@ import (
 
 func addNewComic(cfg *config.Config) {
 	logger := cfg.LogContext.WithField("operation", "addNewComic")
-	c := comics.Comic{
+	c := comics.ComicRecord{
 		ID:               0,
 		Title:            "",
 		BaseURL:          "",
@@ -39,10 +39,10 @@ func addNewComic(cfg *config.Config) {
 	fs := flag.NewFlagSet("AddNewComic", flag.ExitOnError)
 	fs.StringVar(&updateScheduleString, "updates", "", "Update schedule. Specify like 'SuMTuWThFSa'")
 	fs.IntVar(&c.Ordinal, "ord", 9999, "Sort ordinal") // TODO: ensure uniqueness, allow for "insert at next available ordinal" or "insert here, bump collisions" modes.
-	fs.StringVar(&firstComicUrl, "first", "", "First Comic URL.")
+	fs.StringVar(&firstComicUrl, "first", "", "First ComicRecord URL.")
 	fs.StringVar(&latestComicUrl, "latest", "", "Most recently read comic URL.")
-	fs.StringVar(&latestComicUrl, "rss", "", "Comic's RSS feed URL.")
-	fs.StringVar(&c.Title, "title", "", "Comic title")
+	fs.StringVar(&latestComicUrl, "rss", "", "ComicRecord's RSS feed URL.")
+	fs.StringVar(&c.Title, "title", "", "ComicRecord title")
 	fs.StringVar(&c.BaseURL, "base", "", "Base URL for the comic's website. Preferably the 'newest comic' page")
 	if err := fs.Parse(os.Args[2:]); err != nil {
 		logger.WithError(err).Fatal("failed to parse flagset")
@@ -87,7 +87,7 @@ func addNewComic(cfg *config.Config) {
 	}
 
 }
-func parseDateString(s string, c *comics.Comic) {
+func parseDateString(s string, c *comics.ComicRecord) {
 	c.UpdatesSunday = strings.Index(s, "Su") > 0
 	c.UpdatesMonday = strings.Index(s, "M") > 0
 	c.UpdatesTuesday = strings.Index(s, "Tu") > 0

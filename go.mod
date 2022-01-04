@@ -8,7 +8,7 @@ require (
 	github.com/Netflix/go-env v0.0.0-20210215222557-e437a7e7f9fb
 	github.com/cockroachdb/cockroach-go v0.0.0-20190925194419-606b3d062051 // indirect
 	github.com/cznic/ql v1.2.0 // indirect
-	github.com/emicklei/go-restful/v3 v3.5.1 // indirect
+	github.com/emicklei/go-restful/v3 v3.5.1
 	github.com/go-ini/ini v1.38.2 // indirect
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/go-testfixtures/testfixtures/v3 v3.6.1 // indirect
@@ -25,12 +25,13 @@ require (
 	github.com/klaital/intmath v0.0.0-20200731180355-ada28b21388c
 	github.com/kshvakov/clickhouse v1.3.4 // indirect
 	github.com/openzipkin/zipkin-go v0.1.1 // indirect
-	github.com/satori/go.uuid v1.2.0 // indirect
+	github.com/satori/go.uuid v1.2.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/snowflakedb/glog v0.0.0-20180824191149-f5055e6f21ce // indirect
 	github.com/stretchr/objx v0.3.0 // indirect
 	github.com/stretchr/testify v1.7.0
 	github.com/xdg/scram v0.0.0-20180814205039-7eeb5667e42c // indirect
 	github.com/xdg/stringprep v1.0.0 // indirect
+	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
 	gopkg.in/ini.v1 v1.38.2 // indirect
 )

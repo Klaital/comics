@@ -1,35 +1,44 @@
 package comics
 
 import (
-	"database/sql"
 	"fmt"
 	"github.com/klaital/intmath"
 	log "github.com/sirupsen/logrus"
 	"time"
 )
 
-type Comic struct {
-	ID               int            `db:"webcomic_id"`
-	UserID           int            `db:"user_id"`
-	Title            string         `db:"title"`
-	BaseURL          string         `db:"base_url"`
-	FirstComicUrl    sql.NullString `db:"first_comic_url"`
-	LatestComicUrl   sql.NullString `db:"latest_comic_url"`
-	RssUrl           sql.NullString `db:"rss_url"`
-	UpdatesMonday    bool           `db:"updates_monday"`
-	UpdatesTuesday   bool           `db:"updates_tuesday"`
-	UpdatesWednesday bool           `db:"updates_wednesday"`
-	UpdatesThursday  bool           `db:"updates_thursday"`
-	UpdatesFriday    bool           `db:"updates_friday"`
-	UpdatesSaturday  bool           `db:"updates_saturday"`
-	UpdatesSunday    bool           `db:"updates_sunday"`
-	Ordinal          int            `db:"ordinal"`
-	LastRead         time.Time      `db:"last_read"`
+type ComicRecord struct {
+	ID               int       `db:"webcomic_id"`
+	UserID           int       `db:"user_id"`
+	Title            string    `db:"title"`
+	BaseURL          string    `db:"base_url"`
+	FirstComicUrl    *string   `db:"first_comic_url"`
+	LatestComicUrl   *string   `db:"latest_comic_url"`
+	RssUrl           *string   `db:"rss_url"`
+	UpdatesMonday    bool      `db:"updates_monday"`
+	UpdatesTuesday   bool      `db:"updates_tuesday"`
+	UpdatesWednesday bool      `db:"updates_wednesday"`
+	UpdatesThursday  bool      `db:"updates_thursday"`
+	UpdatesFriday    bool      `db:"updates_friday"`
+	UpdatesSaturday  bool      `db:"updates_saturday"`
+	UpdatesSunday    bool      `db:"updates_sunday"`
+	Ordinal          int       `db:"ordinal"`
+	LastRead         time.Time `db:"last_read"`
+	Active           bool      `db:"active"`
+	Nsfw             bool      `db:"nsfw"`
+}
+
+func strPtr(s string) *string {
+	if len(s) == 0 {
+		return nil
+	}
+
+	return &s
 }
 
 // IsValid checks whether the comic struct is prima facia valid for insertion into the database.
 //Does not check against unique indices, as might be on the ID or ordinal fields.
-func (c Comic) IsValid() error {
+func (c ComicRecord) IsValid() error {
 	if len(c.Title) == 0 {
 		return fmt.Errorf("missing required field: title")
 	}
@@ -43,7 +52,7 @@ func (c Comic) IsValid() error {
 	return nil
 }
 
-func (c Comic) SupportedDayCodes() string {
+func (c ComicRecord) SupportedDayCodes() string {
 	s := ""
 	if c.UpdatesSunday {
 		s += "Su"
@@ -77,24 +86,24 @@ func startOfToday() time.Time {
 	y, m, d := time.Now().In(loc).Date()
 	return time.Date(y, m, d, 0, 0, 0, 0, loc)
 }
-func GetTodaySelector() func(Comic) bool {
+func GetTodaySelector() func(ComicRecord) bool {
 	switch startOfToday().Weekday() {
 	case time.Monday:
-		return func(c Comic) bool { return c.UpdatesMonday && c.LastRead.Unix() < startOfToday().Unix() }
+		return func(c ComicRecord) bool { return c.UpdatesMonday && c.LastRead.Unix() < startOfToday().Unix() }
 	case time.Tuesday:
-		return func(c Comic) bool { return c.UpdatesTuesday && c.LastRead.Unix() < startOfToday().Unix() }
+		return func(c ComicRecord) bool { return c.UpdatesTuesday && c.LastRead.Unix() < startOfToday().Unix() }
 	case time.Wednesday:
-		return func(c Comic) bool { return c.UpdatesWednesday && c.LastRead.Unix() < startOfToday().Unix() }
+		return func(c ComicRecord) bool { return c.UpdatesWednesday && c.LastRead.Unix() < startOfToday().Unix() }
 	case time.Thursday:
-		return func(c Comic) bool { return c.UpdatesThursday && c.LastRead.Unix() < startOfToday().Unix() }
+		return func(c ComicRecord) bool { return c.UpdatesThursday && c.LastRead.Unix() < startOfToday().Unix() }
 	case time.Friday:
-		return func(c Comic) bool { return c.UpdatesFriday && c.LastRead.Unix() < startOfToday().Unix() }
+		return func(c ComicRecord) bool { return c.UpdatesFriday && c.LastRead.Unix() < startOfToday().Unix() }
 	case time.Saturday:
-		return func(c Comic) bool { return c.UpdatesSaturday && c.LastRead.Unix() < startOfToday().Unix() }
+		return func(c ComicRecord) bool { return c.UpdatesSaturday && c.LastRead.Unix() < startOfToday().Unix() }
 	case time.Sunday:
-		return func(c Comic) bool { return c.UpdatesSunday && c.LastRead.Unix() < startOfToday().Unix() }
+		return func(c ComicRecord) bool { return c.UpdatesSunday && c.LastRead.Unix() < startOfToday().Unix() }
 	}
-	return func(c Comic) bool { return c.LastRead.Unix() < startOfToday().Unix() }
+	return func(c ComicRecord) bool { return c.LastRead.Unix() < startOfToday().Unix() }
 }
 
 func daysAgo(t time.Time) string {
@@ -114,16 +123,16 @@ func daysAgo(t time.Time) string {
 	}
 	return fmt.Sprintf("%d minutes ago", intmath.RoundToInt(d.Minutes()))
 }
-func (c Comic) ToString() string {
+func (c ComicRecord) ToString() string {
 	return fmt.Sprintf("[%11s] (%s) %s", c.SupportedDayCodes(), daysAgo(c.LastRead), c.BaseURL)
 }
-func (c Comic) DaysAgoNow() string {
+func (c ComicRecord) DaysAgoNow() string {
 	return daysAgo(c.LastRead)
 }
 
-func SelectSubset(set []Comic, selector func(Comic) bool) (selected []Comic, theRest []Comic) {
-	selected = make([]Comic, 0)
-	theRest = make([]Comic, 0, len(set))
+func SelectSubset(set []ComicRecord, selector func(ComicRecord) bool) (selected []ComicRecord, theRest []ComicRecord) {
+	selected = make([]ComicRecord, 0)
+	theRest = make([]ComicRecord, 0, len(set))
 	for _, c := range set {
 		if selector(c) {
 			selected = append(selected, c)
@@ -133,9 +142,9 @@ func SelectSubset(set []Comic, selector func(Comic) bool) (selected []Comic, the
 	}
 	return selected, theRest
 }
-func SelectMapSubset(set map[int]Comic, selector func(Comic) bool) (selected map[int]Comic, theRest map[int]Comic) {
-	selected = make(map[int]Comic, 0)
-	theRest = make(map[int]Comic, len(set))
+func SelectMapSubset(set map[int]ComicRecord, selector func(ComicRecord) bool) (selected map[int]ComicRecord, theRest map[int]ComicRecord) {
+	selected = make(map[int]ComicRecord, 0)
+	theRest = make(map[int]ComicRecord, len(set))
 	for i, c := range set {
 		if selector(c) {
 			selected[c.Ordinal] = set[i]
@@ -145,8 +154,8 @@ func SelectMapSubset(set map[int]Comic, selector func(Comic) bool) (selected map
 	}
 	return selected, theRest
 }
-func SortByOrdinal(set []Comic) map[int]Comic {
-	retval := make(map[int]Comic, len(set))
+func SortByOrdinal(set []ComicRecord) map[int]ComicRecord {
+	retval := make(map[int]ComicRecord, len(set))
 	for i, c := range set {
 		retval[c.Ordinal] = set[i]
 	}
