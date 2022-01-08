@@ -158,7 +158,7 @@ func (cfg *handlerConfig) getActiveComicsHtmlHandler(w http.ResponseWriter, req 
 	<body>
 		<h2>Comics For Today</h2>
 		<table id="comicslist">
-			{{range $c := .Items}}<tr class="comic"><td>{{ $c.DaysAgoNow }}</td><td><a href="http://{{ $.Hostname }}:{{ $.Port }}/api/read/{{ .ID }}">{{$c.Title}}</a></td></tr>{{end}}
+			{{range $c := .Today}}<tr class="comic"><td>{{ $c.DaysAgoNow }}</td><td><a href="http://{{ $.Hostname }}:{{ $.Port }}/api/read/{{ .ID }}">{{$c.Title}}</a></td></tr>{{end}}
 		</table>
 		<h2>The Rest</h2>
 		<table id="comicslist">
