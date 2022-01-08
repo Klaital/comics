@@ -5,4 +5,5 @@ RUN mkdir -p /web
 COPY ./web/* /web/
 COPY ./comics /comics
 
+USER nobody:nobody
 ENTRYPOINT ["/comics"]
