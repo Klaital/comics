@@ -96,6 +96,7 @@ func (cfg *handlerConfig) healthCheckHandler(w http.ResponseWriter, req *http.Re
 		return
 	}
 
+	cfg.logger.Debug("Healthy!")
 	w.WriteHeader(200)
 }
 
@@ -157,11 +158,11 @@ func (cfg *handlerConfig) getActiveComicsHtmlHandler(w http.ResponseWriter, req 
 	<body>
 		<h2>Comics For Today</h2>
 		<table id="comicslist">
-			{{range .Today}}<tr class="comic"><td>{{ .DaysAgoNow }}</td><td><a href="http://{{ .Hostname }}:{{ .Port }}/api/read/{{ .ID }}">{{.Title}}</a></td></tr>{{end}}
+			{{range $c := .Items}}<tr class="comic"><td>{{ $c.DaysAgoNow }}</td><td><a href="http://{{ $.Hostname }}:{{ $.Port }}/api/read/{{ .ID }}">{{$c.Title}}</a></td></tr>{{end}}
 		</table>
 		<h2>The Rest</h2>
 		<table id="comicslist">
-			{{range .Items}}<tr class="comic"><td>{{ .DaysAgoNow }}</td><td><a href="http://{{ .Hostname }}:{{ .Port }}/api/read/{{ .ID }}">{{.Title}}</a></td></tr>{{end}}
+			{{range $c := .Items}}<tr class="comic"><td>{{ $c.DaysAgoNow }}</td><td><a href="http://{{ $.Hostname }}:{{ $.Port }}/api/read/{{ .ID }}">{{$c.Title}}</a></td></tr>{{end}}
 		</table>
 	</body>
 </html>`
