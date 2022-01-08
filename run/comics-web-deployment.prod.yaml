@@ -24,9 +24,10 @@ spec:
     spec:
       containers:
         - name: comics-api
-          image: klaital/comics-web:5fd7a59ec632200941eb9dfee2677b137aa34aa4
+          image: klaital/comics-web:142d3b2d7e9bf73cb4a43e6a52fe73777531ccd3
           ports:
-            - containerPort: 8080
+            - name: http-comics-api
+              containerPort: 8080
           imagePullPolicy: Always
           env:
             - name: REALM
