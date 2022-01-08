@@ -11,7 +11,8 @@ test:
 	ENV_FILE=../../run/autotest.env go test ./pkg/...
 
 container: build test gitver
-	docker build -t klaital/comics-web:$(GITVER) .
+	docker build -t klaital/comics-web:latest .
+	docker tag klaital/comics-web:latest klaital/comics-web:$(GITVER)
 
 push: container
 	docker push klaital/comics-web:$(GITVER)
