@@ -124,7 +124,7 @@ func daysAgo(t time.Time) string {
 	return fmt.Sprintf("%d minutes ago", intmath.RoundToInt(d.Minutes()))
 }
 func (c ComicRecord) ToString() string {
-	return fmt.Sprintf("[%11s] (%s) %s", c.SupportedDayCodes(), daysAgo(c.LastRead), c.BaseURL)
+	return fmt.Sprintf("%4d [%11s] (%s) %s", c.Ordinal, c.SupportedDayCodes(), daysAgo(c.LastRead), c.BaseURL)
 }
 func (c ComicRecord) DaysAgoNow() string {
 	return daysAgo(c.LastRead)

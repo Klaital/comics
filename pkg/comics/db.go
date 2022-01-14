@@ -70,9 +70,9 @@ func MoveComicsDownIfCollision(insertOrdinal, userId int, db *sqlx.DB) error {
 	})
 
 	// Check if a reassignment is needed
-	sqlStmt := db.Rebind(`SELECT COUNT(webcomic_id) FROM webcomic WHERE ordinal = ?`)
+	sqlStmt := db.Rebind(`SELECT COUNT(webcomic_id) FROM webcomic WHERE user_id = ? AND ordinal = ?`)
 	var conflicts int64
-	if err := db.Get(&conflicts, sqlStmt, insertOrdinal); err != nil {
+	if err := db.Get(&conflicts, sqlStmt, userId, insertOrdinal); err != nil {
 		logger.WithError(err).Error("Error checking for ordinal conflicts")
 		return err
 	}

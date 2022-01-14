@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"flag"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
@@ -19,9 +18,9 @@ func addNewComic(cfg *config.Config) {
 		ID:               0,
 		Title:            "",
 		BaseURL:          "",
-		FirstComicUrl:    sql.NullString{},
-		LatestComicUrl:   sql.NullString{},
-		RssUrl:           sql.NullString{},
+		FirstComicUrl:    nil,
+		LatestComicUrl:   nil,
+		RssUrl:           nil,
 		UpdatesMonday:    false,
 		UpdatesTuesday:   false,
 		UpdatesWednesday: false,
@@ -56,16 +55,13 @@ func addNewComic(cfg *config.Config) {
 		}).Debug("updated schedule")
 	}
 	if len(firstComicUrl) > 0 {
-		c.FirstComicUrl.String = firstComicUrl
-		c.FirstComicUrl.Valid = true
+		c.FirstComicUrl = &firstComicUrl
 	}
 	if len(latestComicUrl) > 0 {
-		c.LatestComicUrl.String = latestComicUrl
-		c.LatestComicUrl.Valid = true
+		c.LatestComicUrl = &latestComicUrl
 	}
 	if len(rssUrl) > 0 {
-		c.RssUrl.String = rssUrl
-		c.RssUrl.Valid = true
+		c.RssUrl = &rssUrl
 	}
 
 	if err := c.IsValid(); err != nil {
@@ -103,7 +99,7 @@ func listActiveComics(cfg *config.Config) {
 		log.WithError(err).Fatal("Failed to connect to DB")
 	}
 
-	activeComics, err := comics.FetchActiveComics(db)
+	activeComics, err := comics.FetchActiveComics(db, 1)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to fetch comics list")
 	}
