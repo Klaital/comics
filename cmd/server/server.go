@@ -1,13 +1,13 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"github.com/jmoiron/sqlx"
 	"github.com/klaital/comics/pkg/comics"
 	"github.com/klaital/comics/pkg/config"
 	log "github.com/sirupsen/logrus"
-	"html/template"
 	"net/http"
 	"strconv"
 	"strings"
@@ -18,6 +18,7 @@ import (
 type handlerConfig struct {
 	logger           *log.Entry
 	db               *sqlx.DB
+	ctx              context.Context
 	comicReadUpdates chan int
 
 	// used to generate callback links
@@ -44,6 +45,7 @@ func launchServer(cfg *config.Config) {
 	serverCfg := handlerConfig{
 		logger:           log.NewEntry(log.StandardLogger()),
 		db:               nil,
+		ctx:              context.Background(),
 		comicReadUpdates: make(chan int),
 		hostname:         cfg.Hostname,
 		port:             cfg.Port,
@@ -60,7 +62,7 @@ func launchServer(cfg *config.Config) {
 			readComicId := <-serverCfg.comicReadUpdates
 			t := time.Now()
 			// Update the DB
-			err = comics.UpdateReadNow(readComicId, t, db)
+			err = comics.UpdateReadNow(readComicId, 1, t, db) // TODO: use the real userID!
 			if err != nil {
 				// TODO: detect DB disconnect and retry
 				log.WithError(err).Error("Failed to update comic in DB")
@@ -75,14 +77,13 @@ func launchServer(cfg *config.Config) {
 	}()
 
 	// Prime the cache
-	comicSet, err := comics.FetchActiveComics(serverCfg.db, 1)
+	comicSet, err := comics.FetchComics(serverCfg.ctx, serverCfg.db, 1, nil, nil)
 	if err != nil {
 		serverCfg.logger.WithError(err).Fatal("Failed to heat up the cache")
 	}
 	serverCfg.cacheComicsData(comicSet)
 
 	http.HandleFunc("/healthz", serverCfg.healthCheckHandler)
-	http.HandleFunc("/web/comics", serverCfg.getActiveComicsHtmlHandler)
 	http.HandleFunc("/api/comics", serverCfg.getActiveComicsHandler)
 	http.HandleFunc("/api/read/", serverCfg.readComicHandler)
 	http.Handle("/", http.FileServer(http.Dir("./web")))
@@ -130,70 +131,6 @@ func (cfg *handlerConfig) readComicHandler(w http.ResponseWriter, req *http.Requ
 	http.Redirect(w, req, thisComic.BaseURL, http.StatusSeeOther)
 }
 
-// getActiveComicsHtmlHandler will render an HTML document with the "to-be-read" comics
-func (cfg *handlerConfig) getActiveComicsHtmlHandler(w http.ResponseWriter, req *http.Request) {
-	logger := cfg.logger.WithFields(log.Fields{
-		"operation": "getActiveComicsHtmlHandler",
-	})
-	if len(cfg.comicsDataCache) == 0 {
-		comicSet, err := comics.FetchActiveComics(cfg.db, 1)
-		if err != nil {
-			logger.WithError(err).Error("Failed to fetch active comics")
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		} else {
-			logger = logger.WithField("comics_count", len(comicSet))
-			logger.Debug("Updating comicset")
-		}
-		cfg.cacheComicsData(comicSet)
-	}
-
-	tpl := `
-<!DOCTYPE html>
-<html>
-	<head>
-		<meta charset="UTF-8">
-		<title>{{.Title}}</title>
-	</head>
-	<body>
-		<h2>Comics For Today</h2>
-		<table id="comicslist">
-			{{range $c := .Today}}<tr class="comic"><td>{{ $c.DaysAgoNow }}</td><td><a href="http://{{ $.Hostname }}:{{ $.Port }}/api/read/{{ .ID }}">{{$c.Title}}</a></td></tr>{{end}}
-		</table>
-		<h2>The Rest</h2>
-		<table id="comicslist">
-			{{range $c := .Items}}<tr class="comic"><td>{{ $c.DaysAgoNow }}</td><td><a href="http://{{ $.Hostname }}:{{ $.Port }}/api/read/{{ .ID }}">{{$c.Title}}</a></td></tr>{{end}}
-		</table>
-	</body>
-</html>`
-
-	t, err := template.New("webpage").Parse(tpl)
-	if err != nil {
-		logger.WithError(err).Fatal("Failed to parse html template")
-	}
-
-	today, theRest := comics.SelectMapSubset(cfg.comicsDataCache, comics.GetTodaySelector())
-	data := struct {
-		Title    string
-		Today    map[int]comics.ComicRecord
-		Items    map[int]comics.ComicRecord
-		Hostname string
-		Port     int
-	}{
-		Title:    "AF.net Dynamic Comics Home",
-		Today:    today,
-		Items:    theRest,
-		Hostname: cfg.hostname,
-		Port:     cfg.port,
-	}
-	err = t.Execute(w, data)
-	if err != nil {
-		logger.WithError(err).WithField("tplData", data).Fatal("Failed to execute html template")
-	} else {
-		logger.Debug("Rendered comics list")
-	}
-}
-
 type GetActiveComicsResponse struct {
 	Today   []comics.ComicRecord `json:"today"`
 	TheRest []comics.ComicRecord `json:"therest"`
@@ -204,8 +141,10 @@ func (cfg *handlerConfig) getActiveComicsHandler(w http.ResponseWriter, req *htt
 	logger := cfg.logger.WithFields(log.Fields{
 		"operation": "getActiveComicsHtmlHandler",
 	})
+	activeComicsFilter := true
+	nsfwComicsFilter := false
 	if len(cfg.comicsDataCache) == 0 {
-		comicSet, err := comics.FetchActiveComics(cfg.db, 1)
+		comicSet, err := comics.FetchComics(cfg.ctx, cfg.db, 1, &activeComicsFilter, &nsfwComicsFilter)
 		if err != nil {
 			logger.WithError(err).Error("Failed to fetch active comics")
 			w.WriteHeader(http.StatusInternalServerError)
@@ -238,5 +177,6 @@ func (cfg *handlerConfig) getActiveComicsHandler(w http.ResponseWriter, req *htt
 	//Allow CORS here By * or specific origin
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	w.Header().Set("Content-Type", "application/json")
 	w.Write(respBytes)
 }

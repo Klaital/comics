@@ -26,6 +26,8 @@ type ComicRecord struct {
 	LastRead         time.Time `db:"last_read"`
 	Active           bool      `db:"active"`
 	Nsfw             bool      `db:"nsfw"`
+
+	RssItems []RssItem
 }
 
 func strPtr(s string) *string {

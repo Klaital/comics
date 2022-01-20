@@ -3,13 +3,16 @@ package config
 import (
 	"fmt"
 	"github.com/Netflix/go-env"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
 	log "github.com/sirupsen/logrus"
+
 	"os"
 )
 
 type Config struct {
+
 	// Database
 	DbHost     string   `env:"DB_HOST"`
 	DbUser     string   `env:"DB_USER"`

@@ -1,6 +1,7 @@
 package comics
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"github.com/jmoiron/sqlx"
@@ -9,51 +10,139 @@ import (
 )
 
 func FetchComicByID(db *sqlx.DB, comicID, userID int) (*ComicRecord, error) {
+	logger := log.WithFields(log.Fields{
+		"comic-id": comicID,
+		"user-id":  userID,
+	})
 	sqlQuery := db.Rebind(`SELECT * FROM webcomic WHERE webcomic_id=? AND user_id=?`)
 	var c ComicRecord
 	err := db.Get(&c, sqlQuery, comicID, userID)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
+	if err != nil {
+		logger.WithError(err).Error("Error querying webcomic by ID")
+		return nil, err
+	}
+
+	rssSqlQuery := db.Rebind(`SELECT item_id, webcomic_id, user_id, is_read, guid, title, link FROM rss_items WHERE webcomic_id = ? AND user_id = ?`)
+	var rssItems []RssItem
+	err = db.Select(&rssItems, rssSqlQuery, comicID, userID)
+	if err == sql.ErrNoRows {
+		c.RssItems = []RssItem{}
+	} else if err != nil {
+		logger.WithError(err).Error("Error querying RSS for webcomic by ID")
+		return nil, err
+	}
+	c.RssItems = rssItems
+
 	return &c, err
 }
-func FetchActiveComics(db *sqlx.DB, userID int) ([]ComicRecord, error) {
-	var comicData []ComicRecord
-	sqlQuery := `SELECT webcomic_id, user_id, title, 
-			base_url, first_comic_url, latest_comic_url,
-			updates_monday, updates_tuesday, updates_wednesday,
-			updates_thursday, updates_friday, updates_saturday,
-			updates_sunday, ordinal, last_read
-		FROM webcomic
-		WHERE active=1 AND user_id = ?
-		ORDER BY ordinal ASC`
 
-	sqlStmt, err := db.Preparex(sqlQuery)
-	if err != nil {
-		log.WithError(err).Errorf("Failed to prepare fetch query")
-		return nil, err
-	}
-
-	// Fetch the data!
-	err = sqlStmt.Select(&comicData, userID)
-	if err != nil {
-		log.WithError(err).Errorf("Failed to select comics data")
-		return nil, err
-	}
-
-	return comicData, nil
+type fetchComicsRow struct {
+	ComicRecord
+	RssItem
 }
 
-func UpdateReadNow(comicId int, readTime time.Time, db *sqlx.DB) error {
+// FetchComics queries the DB for comics matching the given filters.
+// UserID is mandatory, but filtering on Active or NSFW flags is optional.
+func FetchComics(ctx context.Context, db *sqlx.DB, userId int, filterActive *bool, filterNsfw *bool) ([]ComicRecord, error) {
+	logger := log.WithFields(log.Fields{
+		"userId": userId,
+	})
+
+	sqlStmt := `SELECT webcomic.webcomic_id, webcomic.user_id, webcomic.title, 
+			webcomic.base_url, webcomic.first_comic_url, webcomic.latest_comic_url,
+			webcomic.updates_monday, webcomic.updates_tuesday, webcomic.updates_wednesday,
+			webcomic.updates_thursday, webcomic.updates_friday, webcomic.updates_saturday,
+			webcomic.updates_sunday, webcomic.ordinal, webcomic.last_read, 
+			webcomic.active, webcomic.nsfw,
+			COALESCE(rss_items.guid, '') "guid", COALESCE(rss_items.title, '') "title", COALESCE(rss_items.link, '') "link"
+		FROM webcomic LEFT OUTER JOIN rss_items
+			ON webcomic.webcomic_id = rss_items.webcomic_id
+		WHERE webcomic.user_id = ?`
+	params := []interface{}{userId}
+	if filterNsfw != nil {
+		logger = logger.WithField("filterNsfw", *filterNsfw)
+		sqlStmt += ` AND webcomic.nsfw=?`
+		params = append(params, *filterNsfw)
+	}
+	if filterActive != nil {
+		logger = logger.WithField("filterActive", *filterActive)
+		sqlStmt += ` AND webcomic.active=?`
+		params = append(params, *filterActive)
+	}
+
+	log.Debug("Composed filtered comics query")
+	var rows []fetchComicsRow
+	if err := db.SelectContext(ctx, &rows, db.Rebind(sqlStmt), params...); err != nil {
+		logger.WithError(err).Error("Error fetching comics + RSS data")
+		return nil, err
+	}
+
+	// Collate the RSS Items onto their base ComicRecord
+	comicSet := make(map[int]ComicRecord, 0)
+	for i, row := range rows {
+		existingComic, ok := comicSet[row.WebcomicID]
+		if !ok {
+			existingComic = rows[i].ComicRecord
+		}
+		if row.Guid != "" {
+			existingComic.RssItems = append(existingComic.RssItems, row.RssItem)
+		}
+		comicSet[row.WebcomicID] = existingComic
+	}
+
+	// Reformat the comic data into a flat array for return
+	returnSet := make([]ComicRecord, 0, len(comicSet))
+	for id := range comicSet {
+		returnSet = append(returnSet, comicSet[id])
+	}
+	return returnSet, nil
+}
+
+//func FetchActiveComics(db *sqlx.DB, userID int) ([]ComicRecord, error) {
+//	var comicData []ComicRecord
+//	sqlQuery := `SELECT webcomic_id, user_id, title,
+//			base_url, first_comic_url, latest_comic_url,
+//			updates_monday, updates_tuesday, updates_wednesday,
+//			updates_thursday, updates_friday, updates_saturday,
+//			updates_sunday, ordinal, last_read, active, nsfw
+//		FROM webcomic
+//		WHERE active=1 AND user_id = ?
+//		ORDER BY ordinal ASC`
+//
+//	sqlStmt, err := db.Preparex(sqlQuery)
+//	if err != nil {
+//		log.WithError(err).Errorf("Failed to prepare fetch query")
+//		return nil, err
+//	}
+//
+//	// Fetch the data!
+//	err = sqlStmt.Select(&comicData, userID)
+//	if err != nil {
+//		log.WithError(err).Errorf("Failed to select comics data")
+//		return nil, err
+//	}
+//
+//	return comicData, nil
+//}
+
+func UpdateReadNow(comicId, userId int, readTime time.Time, db *sqlx.DB) error {
 	logger := log.WithFields(log.Fields{
 		"operation":   "UpdateReadNow",
 		"read_time":   readTime.Unix(),
 		"webcomic_id": comicId,
 	})
-	sqlQuery := db.Rebind(`UPDATE webcomic SET last_read = ? WHERE webcomic_id = ?`)
+	sqlQuery := db.Rebind(`UPDATE webcomic SET last_read = ? WHERE webcomic_id = ? AND user_id = ?`)
+	_, err := db.Exec(sqlQuery, readTime, comicId, userId)
+	if err != nil {
+		logger.WithError(err).Errorf("Failed to update comics data")
+		return err
+	}
 
-	// Fetch the data!
-	_, err := db.Exec(sqlQuery, readTime, comicId)
+	sqlQuery = db.Rebind(`UPDATE rss_items SET is_read = true WHERE webcomic_id = ? AND user_id = ?`)
+	_, err = db.Exec(sqlQuery, comicId, userId)
 	if err != nil {
 		logger.WithError(err).Errorf("Failed to update comics data")
 		return err

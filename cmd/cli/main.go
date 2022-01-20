@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"flag"
 	"fmt"
@@ -56,16 +57,13 @@ func addNewComic(cfg *config.Config) {
 		}).Debug("updated schedule")
 	}
 	if len(firstComicUrl) > 0 {
-		c.FirstComicUrl.String = firstComicUrl
-		c.FirstComicUrl.Valid = true
+		c.FirstComicUrl = &firstComicUrl
 	}
 	if len(latestComicUrl) > 0 {
-		c.LatestComicUrl.String = latestComicUrl
-		c.LatestComicUrl.Valid = true
+		c.LatestComicUrl = &latestComicUrl
 	}
 	if len(rssUrl) > 0 {
-		c.RssUrl.String = rssUrl
-		c.RssUrl.Valid = true
+		c.RssUrl = &rssUrl
 	}
 
 	if err := c.IsValid(); err != nil {
@@ -103,7 +101,7 @@ func listActiveComics(cfg *config.Config) {
 		log.WithError(err).Fatal("Failed to connect to DB")
 	}
 
-	activeComics, err := comics.FetchActiveComics(db)
+	activeComics, err := comics.FetchComics(context.Background(), db, userId, &filterActive, nil)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to fetch comics list")
 	}
@@ -113,14 +111,47 @@ func listActiveComics(cfg *config.Config) {
 	}
 
 }
+
+func markComicRead(cfg *config.Config) {
+	logger := log.WithFields(log.Fields{
+		"userId":  userId,
+		"comicId": comicId,
+	})
+	db, err := cfg.ConnectDB()
+	if err != nil {
+		logger.WithError(err).Fatal("Failed to connect to DB")
+	}
+
+	if userId == 0 || comicId == 0 {
+		flag.Usage()
+		logger.Fatalf("Missing parameter user-id or comic-id")
+	}
+	
+	err = comics.UpdateReadNow(comicId, userId, time.Now(), db)
+	if err != nil {
+		logger.WithError(err).Fatal("Failed to update read now for comic")
+	}
+}
+
+var userId int
+var comicId int
+var filterActive bool
+
 func main() {
 	cfg := config.Load()
 	//logger := cfg.LogContext.WithField("operation", "main")
+
+	flag.IntVar(&userId, "user-id", 0, "User ID to update")
+	flag.IntVar(&comicId, "comic-id", 0, "Comic ID to update")
+	flag.BoolVar(&filterActive, "active", true, "Only show active comics")
+	flag.Parse()
 
 	switch os.Args[1] {
 	case "add":
 		addNewComic(&cfg)
 	case "list":
 		listActiveComics(&cfg)
+	case "mark-read":
+		markComicRead(&cfg)
 	}
 }
