@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"flag"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
@@ -20,9 +19,9 @@ func addNewComic(cfg *config.Config) {
 		ID:               0,
 		Title:            "",
 		BaseURL:          "",
-		FirstComicUrl:    sql.NullString{},
-		LatestComicUrl:   sql.NullString{},
-		RssUrl:           sql.NullString{},
+		FirstComicUrl:    nil,
+		LatestComicUrl:   nil,
+		RssUrl:           nil,
 		UpdatesMonday:    false,
 		UpdatesTuesday:   false,
 		UpdatesWednesday: false,
@@ -126,7 +125,7 @@ func markComicRead(cfg *config.Config) {
 		flag.Usage()
 		logger.Fatalf("Missing parameter user-id or comic-id")
 	}
-	
+
 	err = comics.UpdateReadNow(comicId, userId, time.Now(), db)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to update read now for comic")

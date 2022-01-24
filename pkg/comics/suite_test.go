@@ -55,7 +55,6 @@ func (suite *ComicTestSuite) SetupSuite() {
 	if err != nil {
 		log.WithError(err).Fatal("Failed to load initial fixtures")
 	}
-
 }
 
 // Runs before each test
