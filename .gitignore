@@ -4,6 +4,10 @@
 *.dll
 *.so
 *.dylib
+comics
+cli
+server
+rss_updater
 
 # Test binary, built with `go test -c`
 *.test
@@ -17,3 +21,7 @@
 *.env
 
 web/main.wasm
+
+# Jetbrains IDE files
+.idea/*
+
