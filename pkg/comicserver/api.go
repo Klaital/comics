@@ -1,23 +1,50 @@
 package comicserver
 
 import (
-	"github.com/emicklei/go-restful/v3"
-	"github.com/klaital/comics/pkg/config"
-	"github.com/klaital/comics/pkg/filters"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
+	"github.com/klaital/comics/pkg/datalayer"
+	"github.com/sirupsen/logrus"
+	"time"
 )
 
-func New(cfg config.Config) *restful.Container {
-	c := restful.NewContainer()
+type Server struct {
+	storage *datalayer.ComicDataSource
+	l       *logrus.Entry
+	mux     *chi.Mux
+}
 
-	// Set global filters here
-	// TODO: add rate limiting
-	c.Filter(filters.RequestLogFilter)
+func New(storage *datalayer.ComicDataSource, logger *logrus.Entry) *Server {
+	srv := Server{
+		storage: storage,
+		l:       logger,
+	}
+	// Ensure a default logger is attached
+	if logger == nil {
+		srv.l = logrus.NewEntry(logrus.New())
+	}
 
-	// Comics API
-	comicsWS := restful.WebService{}
-	comicsWS.Path(cfg.BasePath + "/comics").ApiVersion("1.0.0").Doc("CRUD API for Comics subscriptions")
+	srv.mux = chi.NewRouter()
+	srv.mux.Use(middleware.Timeout(10 * time.Second))
+	srv.mux.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"http://localhost", "https://comics.klaital.com"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"link"},
+		AllowCredentials: false,
+		MaxAge:           300,
+		Debug:            false,
+	}))
 
-	c.Add(&comicsWS)
+	// Configure the exposed routes
+	srv.mux.Get("/api/comics", srv.GetAllComics)
+	srv.mux.Post("/api/comics/{comicID}/rss", srv.RefreshRssFeed)
+	srv.mux.Put("/api/comics/{comicID}/read", srv.MarkComicRead)
+	srv.mux.Put("/api/comics/{comicID}/rss/{rssItemId}/read", srv.MarkItemRead)
+	return &srv
+}
 
-	return c
+func (srv *Server) ServeHTTP() {
+
 }

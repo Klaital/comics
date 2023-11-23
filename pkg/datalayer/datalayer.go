@@ -7,7 +7,7 @@ import (
 
 type ComicDataSource interface {
 	// AddUser will register a new user
-	AddUser(ctx context.Context, email, password string) (*User, error)
+	AddUser(ctx context.Context, username, email, password string) (*User, error)
 
 	// GetUser will fetch a user's details. Use GetComics to fetch that user's subscriptions.
 	GetUser(ctx context.Context, id uint64) (*User, error)
@@ -51,3 +51,4 @@ type ComicDataSource interface {
 var ErrEmailAlreadyUsed error = errors.New("email already in use")
 var ErrNotFound error = errors.New("not found")
 var ErrNotValid error = errors.New("input data not valid")
+var ErrNotImplemented = errors.New("operation not implemented")

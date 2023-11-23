@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"github.com/jmoiron/sqlx"
@@ -17,7 +18,7 @@ import (
 
 type handlerConfig struct {
 	logger           *log.Entry
-	db               *sqlx.DB
+	db               *sql.DB
 	ctx              context.Context
 	comicReadUpdates chan int
 
@@ -50,7 +51,7 @@ func launchServer(cfg *config.Config) {
 		hostname:         cfg.Hostname,
 		port:             cfg.Port,
 	}
-	db, err := cfg.ConnectDB()
+	db, err := cfg.ConnectPostgres()
 	if err != nil {
 		serverCfg.logger.WithError(err).Fatal("failed to connect to DB")
 	}

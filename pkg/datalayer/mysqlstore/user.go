@@ -2,6 +2,9 @@ package mysqlstore
 
 import (
 	"context"
+	"database/sql"
+	"errors"
+	"fmt"
 	"github.com/klaital/comics/pkg/datalayer"
 	"math/rand"
 )
@@ -24,11 +27,17 @@ func (s *MysqlStore) AddUser(ctx context.Context, email, password string) (*data
 }
 
 func (s *MysqlStore) GetUser(ctx context.Context, id uint64) (*datalayer.User, error) {
-	u, ok := s.users[id]
-	if ok {
-		return &u, nil
+	var u datalayer.User
+	var err error
+	err = s.db.Get(&u, "SELECT * FROM user WHERE user_id=?", id)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, datalayer.ErrNotFound
 	}
-	return nil, datalayer.ErrNotFound
+	if err != nil {
+		return nil, fmt.Errorf("fetching user: %w", err)
+	}
+	// Success!
+	return &u, nil
 }
 
 func (s *MysqlStore) UpdateUser(ctx context.Context, userId uint64, newData *datalayer.User) error {

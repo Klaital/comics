@@ -1,0 +1,42 @@
+version: '3.8'
+services:
+#  comics:
+#    container_name: comics-server
+#    build:
+#      context: ..
+#      target: dev
+#    ports:
+#      - 8280:8080
+#    links:
+#      - postgres-login
+#      - sessionstore
+#    depends_on:
+#      - postgres-login
+#      - sessionstore
+#    env_file:
+#      - run/.env
+#      - run/postgres.env
+#    networks:
+#      - af_net
+#    volumes:
+#      - .:/app:rw,delegated
+
+  postgres-comics:
+    image: postgres:16.1
+    ports:
+      - "5433:5432"
+    env_file: postgres.env
+    volumes:
+      - .:/docker-entrypoint-initdb.d
+    networks:
+      - af_net
+    command: ["postgres", "-c", "log_statement=all"]
+#
+#  sessionstore:
+#    image: redis:7-alpine
+#    networks:
+#      - af_net
+
+networks:
+  af_net:
+    name: af_net

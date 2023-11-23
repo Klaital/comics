@@ -3,32 +3,20 @@ package mysqlstore
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/klaital/comics/pkg/datalayer"
 	"time"
 )
 
 func (s *MysqlStore) GetComics(ctx context.Context, userId uint64, filterNsfw *bool, filterActive *bool) ([]datalayer.Comic, error) {
 	// Fetch all comics for the user
-	comics := make([]datalayer.Comic, 0)
-	for id, c := range s.comics {
-		if c.UserID != userId {
-			continue
-		}
-
-		// Apply filters
-		if filterActive != nil {
-			if c.Active != *filterActive {
-				continue
-			}
-		}
-		if filterNsfw != nil {
-			if c.Nsfw != *filterNsfw {
-				continue
-			}
-		}
-		comics = append(comics, s.comics[id])
+	var comics []datalayer.Comic
+	var err error
+	err = s.db.Select(&comics, "SELECT * FROM webcomic")
+	if err != nil {
+		return nil, fmt.Errorf("fetching old comics: %w", err)
 	}
-
+	// Success!
 	return comics, nil
 }
 

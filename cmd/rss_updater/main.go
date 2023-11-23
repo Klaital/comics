@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"flag"
 	"fmt"
 	"github.com/klaital/comics/pkg/comics"
@@ -33,7 +34,7 @@ func main() {
 
 	comic, err := comics.FetchComicByID(db, comicId, userId)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			logger.Infof("Bad input. Comic ID %d does not exist under user %d", comicId, userId)
 		}
 		logger.WithError(err).Fatal("Failed to query comic data.")
