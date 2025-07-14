@@ -1,5 +1,11 @@
+
 controllers:
     resource:
         path: ../src/Controller/
         namespace: App\Controller
     type: attribute
+
+welcome:
+    path: /
+    controller: App\Controller\SubscriptionController::index
+    methods: GET|HEAD
