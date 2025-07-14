@@ -1,9 +1,0 @@
-version: 1
-packages:
-        - path: "queries/"
-          name: "queries"
-          engine: "postgresql"
-          schema: "migrations/"
-          queries: "queries/"
-
-

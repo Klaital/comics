@@ -1,0 +1,60 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ sub.title }} | AF Reader{% endblock %}
+
+{% block body %}
+    <style>
+        .example-wrapper { margin: 1em auto; max-width: 800px; width: 95%; font: 18px/1.5 sans-serif; }
+        .example-wrapper code { background: #F5F5F5; padding: 2px 6px; }
+    </style>
+    <script>
+        function markAllRead(subscriptionId) {
+            fetch(`/api/subs/${subscriptionId}/rss/readall`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            }).then(response => {
+                if (response.status === 202) {
+                    console.log('Marked as read');
+                } else {
+                    console.error('Failed to mark as read');
+                }
+            });
+        }
+        function markReadBefore(subscriptionId, itemId) {
+            fetch(`/api/subs/${subscriptionId}/rss/${itemId}/readbefore`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            }).then(response => {
+                if (response.status === 202) {
+                    console.log('Marked as read');
+                } else {
+                    console.error('Failed to mark as read');
+                }
+            });
+        }
+    </script>
+    <div class="content-wrapper">
+        <h2>{{ sub.title }}</h2>
+        <p>{{ sub.getUnreadCount }} unread</p>
+        <table>
+            {% for item in sub.getUnreadRssItems %}
+                <tr class="sub-content">
+                    <td>
+                        {{ item.pubDate | date('Y-m-d')}}
+                    </td>
+                    <td>
+                        <a href="{{ item.link }}">{{ item.description }}</a>
+                    </td>
+                    <td>
+                        <input type="button" value="I'm caught up to here" onclick="markReadBefore({{ sub.id }}, {{ item.id }})">
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+    </div>
+
+{% endblock %}

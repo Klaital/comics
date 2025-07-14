@@ -1,0 +1,51 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Your Subscriptions{% endblock %}
+
+{% block body %}
+<style>
+    .example-wrapper { margin: 1em auto; max-width: 800px; width: 95%; font: 18px/1.5 sans-serif; }
+    .example-wrapper code { background: #F5F5F5; padding: 2px 6px; }
+</style>
+<script>
+    function markRead(subscriptionId) {
+        fetch(`/api/subs/${subscriptionId}/rss/readall`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        }).then(response => {
+            if (response.status === 202) {
+                console.log('Marked as read');
+            } else {
+                console.error('Failed to mark as read');
+            }
+        });
+    }
+</script>
+<div class="content-wrapper">
+    <table>
+{% for sub in subs %}
+    <tr class="sub-content">
+        <td>
+            <a href="/subs/{{ sub.id }}">{{ sub.ordinal }}</a>
+        </td>
+        <td>
+            <a href="{{ sub.lastestComicUrl }}"><h3>{{ sub.title }}</h3></a>
+        </td>
+        <td>
+            {% if sub.getOldestUnreadItem %}
+                {{ sub.getUnreadCount }} unread. Resume here: <a href="{{ sub.getOldestUnreadItem.link }}">{{ sub.getOldestUnreadItem.title }}</a>
+            {% else %}
+                RSS Feed has not been loaded yet.
+            {% endif %}
+        </td>
+        <td>
+            <input type="button" value="I'm caught up" onclick="markRead({{ sub.id }})">
+        </td>
+    </tr>
+{% endfor %}
+    </table>
+</div>
+
+{% endblock %}
