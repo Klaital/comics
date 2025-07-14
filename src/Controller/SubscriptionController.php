@@ -13,6 +13,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Contracts\HttpClient\ResponseInterface;
 
 final class SubscriptionController extends AbstractController
 {
@@ -68,20 +69,14 @@ final class SubscriptionController extends AbstractController
     }
 
     #[Route('/api/subs/{subId}/rss/readall', name: 'api_subscription_readall', methods: ['POST'])]
-    public function readAll(int $subId): Response
+    public function readAll(int $subId): JsonResponse
     {
         $s = $this->entityManager->getRepository(Subscription::class)->find($subId);
         if (!$s)
         {
             return $this->json(['error' => 'Subscription not found'], Response::HTTP_NOT_FOUND);
         }
-        $rssItems = $s->getRssItems();
-        $now = new \DateTime();
-        foreach($rssItems as $rssItem) {
-            $this->bus->dispatch(new ItemReadMessage($rssItem->getId(), $now));
-            $rssItem->setReadAt(new \DateTime());
-        }
-        $this->entityManager->flush();
+        $s->markAllRssAsRead($this->entityManager);
         return new JsonResponse(null, 202);
     }
 

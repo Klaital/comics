@@ -380,7 +380,7 @@ class Subscription
     {
         $conn = $entityManager->getConnection();
         $sql = 'UPDATE rss_item SET read_at = :read_at WHERE subscription_id  = :sub_id AND read_at IS NULL';
-        $res = $conn->executeQuery($sql, ['read_at' => new \DateTime(), 'sub_id' => $this->getId()]);
+        $res = $conn->executeQuery($sql, ['read_at' => (new \DateTime())->format('Y-m-d H:i:s'), 'sub_id' => $this->getId()]);
     }
 
     public function markAllRssAsUnread(
