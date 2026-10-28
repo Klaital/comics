@@ -409,7 +409,13 @@ class Subscription
         $rssContent = $resp->getContent(true);
         $rssData = @simplexml_load_string($rssContent);
         if (!$rssData) {
-            throw new \RuntimeException("Failed to parse rss feed " .  $this->rss_url);
+            throw new \RuntimeException("Failed to parse rss feed " . $this->rss_url);
+        }
+        if (!$rssData->channel) {
+            throw new \RuntimeException("Failed to parse rss channel from " . $this->rss_url);
+        }
+        if (!$rssData->channel->item) {
+            throw new \RuntimeException("Failed to parse rss item from " . $this->rss_url);
         }
         foreach ($rssData->channel->item as $item) {
             $newItem = new RssItem();
@@ -448,6 +454,7 @@ class Subscription
             $entityManager->persist($newItem);
             print('+');
         }
+        print("\n");
         $entityManager->flush();
     }
 }
